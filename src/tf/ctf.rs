@@ -1,3 +1,5 @@
+use num::complex::Complex64;
+
 use super::{TimeDomain, TransferFunction};
 
 #[derive(Debug, Clone)]
@@ -7,12 +9,13 @@ pub struct ContinousTransferFunction {
 }
 
 impl ContinousTransferFunction {
-    fn from_numden(numerator: Vec<f64>, denominator: Vec<f64>) -> Self {
+    pub fn from_numden(numerator: Vec<f64>, denominator: Vec<f64>) -> Self {
         Self { numerator, denominator }
     }
 }
 
 impl TransferFunction for ContinousTransferFunction {
+
     fn time_domain(&self) -> super::TimeDomain {
         TimeDomain::Continous
     }
@@ -24,6 +27,14 @@ impl TransferFunction for ContinousTransferFunction {
     fn denominator(&self) -> &[f64] {
         &self.denominator
     }
+    
+    fn frequency_response(&self, omega_range: &[f64]) -> Vec<num::complex::Complex64> {
+        omega_range.iter().map(|&w| {
+            let s = Complex64::new(0.0, w);
+            self.evaluate(s)
+        }).collect()
+    }
+    
 }
 
 #[cfg(test)]
@@ -59,5 +70,18 @@ mod tests {
 
         // Then
         assert_eq!(2, order)
+    }
+
+    #[test]
+    fn test_order_empty_denominator() {
+        // Given
+        // H(s) = 1
+        let tf = ContinousTransferFunction::from_numden(vec![1.0], vec![]);
+
+        // When
+        let order = tf.order();
+
+        // Then
+        assert_eq!(0, order)
     }
 }

@@ -12,6 +12,8 @@ pub trait TransferFunction {
     fn numerator(&self) -> &[f64];
     fn denominator(&self) -> &[f64];
 
+    fn frequency_response(&self, omega: &[f64]) -> Vec<Complex64>;
+    
     fn evaluate(&self, eval_point: Complex64) -> Complex64 {
         let horner = |coeffs: &[f64]| {
             coeffs.iter().fold(Complex64::new(0.0, 0.0), |acc, coeff| acc * eval_point + coeff)
