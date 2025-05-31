@@ -7,7 +7,7 @@ pub struct BodePoint {
     pub phase_rad: f64,
 }
 
-pub fn bode_data(tf: &impl TransferFunction, omega: &[f64]) -> Vec<BodePoint> {
+pub fn bode_data(tf: &dyn TransferFunction, omega: &[f64]) -> Vec<BodePoint> {
     tf.frequency_response(omega)
         .iter()
         .zip(omega.iter())
