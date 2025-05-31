@@ -1,16 +1,23 @@
 use num::complex::Complex64;
 
-use super::{TimeDomain, TransferFunction};
+use super::{traits::roots, TimeDomain, TransferFunction};
 
 #[derive(Debug, Clone)]
 pub struct ContinousTransferFunction {
     numerator: Vec<f64>,
     denominator: Vec<f64>,
+    poles: Vec<Complex64>,
+    zeroes: Vec<Complex64>,
 }
 
 impl ContinousTransferFunction {
     pub fn from_numden(numerator: Vec<f64>, denominator: Vec<f64>) -> Self {
-        Self { numerator, denominator }
+        Self {
+            poles: roots(&denominator),
+            zeroes: roots(&numerator),
+            numerator, 
+            denominator,
+        }
     }
 }
 
@@ -33,6 +40,14 @@ impl TransferFunction for ContinousTransferFunction {
             let s = Complex64::new(0.0, w);
             self.evaluate(s)
         }).collect()
+    }
+    
+    fn poles(&self) -> &[Complex64] {
+        &self.poles
+    }
+    
+    fn zeroes(&self) -> &[Complex64] {
+        &self.zeroes
     }
     
 }

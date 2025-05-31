@@ -11,8 +11,12 @@ pub enum TimeDomain {
 pub trait TransferFunction {
 
     fn time_domain(&self) -> TimeDomain;
+
     fn numerator(&self) -> &[f64];
     fn denominator(&self) -> &[f64];
+
+    fn poles(&self) -> &[Complex64];
+    fn zeroes(&self) -> &[Complex64];
 
     fn frequency_response(&self, omega: &[f64]) -> Vec<Complex64>;
     
@@ -27,18 +31,16 @@ pub trait TransferFunction {
         self.denominator().len().saturating_sub(1)
     }
 
-    fn poles(&self) -> Vec<Complex64> {
-        roots(self.denominator())
-    }
-
-    fn zeroes(&self) -> Vec<Complex64> {
-        roots(self.numerator())
-    }
-
 }
 
 // Based on MATLAB roots algorithm (see https://www.mathworks.com/help/matlab/ref/roots.html)
-fn roots(coeffs: &[f64]) -> Vec<Complex64> {
+// TODO: Should this be in TF trait file?
+pub fn roots(coeffs: &[f64]) -> Vec<Complex64> {
+
+    if coeffs.len() <= 1 {
+        return Vec::new();
+    }
+
     // Make coeffs monic (normalize to highest-order coefficient)
     let monic_coeffs: Vec<f64> = coeffs.iter().map(|coeff| coeff / coeffs[0]).collect();
 
