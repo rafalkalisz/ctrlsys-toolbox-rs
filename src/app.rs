@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{plot::bode::bode_plot, tf::{ctf::ContinousTransferFunction, TransferFunction}};
+use crate::{plot::{bode::bode_plot, pz::pzplot}, tf::{ctf::ContinousTransferFunction, TransferFunction}};
 
 pub struct MainApp {
     tf: Box<dyn TransferFunction>,
@@ -40,6 +40,8 @@ impl eframe::App for MainApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Bode Plot");
             bode_plot(ui, self.tf.as_ref(), 0.0, 10.0, 100);
+            ui.heading("Pole-Zero Plot");
+            pzplot(ui, self.tf.as_ref());
         });
 
     }
