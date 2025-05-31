@@ -39,6 +39,7 @@ impl TransferFunction for ContinousTransferFunction {
 
 #[cfg(test)]
 mod tests {
+    use approx::assert_relative_eq;
     use num::complex::Complex64;
 
     use super::*;
@@ -83,5 +84,32 @@ mod tests {
 
         // Then
         assert_eq!(0, order)
+    }
+
+    #[test]
+    fn test_poles_zeroes() {
+        // Given
+        // H(s) = (s + 1) / (s + 2)(s + 3) = (s + 1) / (s^2 + 5s + 6)
+        let tf = ContinousTransferFunction::from_numden(vec![1.0, 1.0], vec![1.0, 5.0, 6.0]);
+
+        // When
+        let zeroes = tf.zeroes();
+        let poles = tf.poles();
+    
+        // Then
+        // Numerator: (s + 1) => zeroes: -1
+        assert_eq!(1, zeroes.len());
+        assert_relative_eq!(-1.0, zeroes[0].re);
+        assert_relative_eq!(0.0, zeroes[0].im);
+        // Denominator: (s + 2)(s + 3) => poles: -2, -3
+        // TODO: Asserted root order in Vec determined experimentally when using ndarray_linalg::eig()
+        //       Unit test should be independent of the chosen algorithm implementation
+        assert_eq!(2, poles.len());
+        assert_relative_eq!(-3.0, poles[0].re);
+        assert_relative_eq!(0.0, poles[0].im);
+        assert_relative_eq!(-2.0, poles[1].re);
+        assert_relative_eq!(0.0, poles[1].im);
+        
+
     }
 }
