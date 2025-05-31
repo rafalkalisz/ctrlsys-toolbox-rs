@@ -25,3 +25,39 @@ impl TransferFunction for ContinousTransferFunction {
         &self.denominator
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use num::complex::Complex64;
+
+    use super::*;
+
+    #[test]
+    fn test_evaluate() {
+        // Given
+        // H(s) = 1 / (s + 1), s = j
+        let tf = ContinousTransferFunction::from_numden(vec![1.0], vec![1.0, 1.0]);
+        let s = Complex64::new(0.0, 1.0);
+        
+        // When
+        let result = tf.evaluate(s);
+        
+        // Then
+        // H(s) = 1 / (1 + j)
+        let expected = Complex64::new(1.0, 0.0) / Complex64::new(1.0, 1.0);
+        assert_eq!(expected, result)
+    }
+
+    #[test]
+    fn test_order() {
+        // Given
+        // H(s) = 1 / (s^2 + s + 1)
+        let tf = ContinousTransferFunction::from_numden(vec![1.0], vec![1.0, 1.0, 1.0]);
+        
+        // When
+        let order = tf.order();
+
+        // Then
+        assert_eq!(2, order)
+    }
+}
