@@ -1,0 +1,4 @@
+# Workaround for newest ndarray-linalg version not linking lapack correctly
+# https://github.com/rust-ndarray/ndarray-linalg/issues/373#issuecomment-2798411640
+[build]
+rustflags = ["-l", "lapack"]
