@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{analysis::frequency::{bode_data, linspace, logspace}, tf::TransferFunction};
+use crate::{analysis::{frequency::bode_data, linspace}, tf::TransferFunction};
 
 pub fn bode_mag_plot(ui: &mut egui::Ui, tf: &dyn TransferFunction, w_start: f64, w_stop: f64, points: usize) {
     let freq_range: Vec<f64> = linspace(w_start, w_stop, points);
