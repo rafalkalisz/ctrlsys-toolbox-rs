@@ -15,19 +15,21 @@ pub struct MainApp {
 
 impl Default for MainApp {
     fn default() -> Self {
+        let ctf_input_num = vec![0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        let ctf_input_den = vec![1.0, 3.236, 5.236, 5.236, 3.236, 1.0];
         let ctf = ContinousTransferFunction::from_numden(
-            vec![1.0], 
-            vec![1.0, 2.0, 1.0]
+            trim_coeffs(ctf_input_num.clone()), 
+            trim_coeffs(ctf_input_den.clone()),
         );
         Self {
+            ctf_input_order: ctf_input_num.len() - 1,
+            dtf_input_order: ctf_input_den.len() - 1,
             dtf: DiscreteTransferFunction::from_ctf(&ctf, 1.0),
-            ctf,
             selected_time_domain: TimeDomain::Continous,
             tf_input: TfInput::Continous,
-            ctf_input_den: vec![0.0, 0.0, 0.0],
-            ctf_input_num: vec![0.0, 0.0, 0.0],
-            ctf_input_order: 2,
-            dtf_input_order: 2,
+            ctf_input_num,
+            ctf_input_den,
+            ctf,
         }
     }
 }
