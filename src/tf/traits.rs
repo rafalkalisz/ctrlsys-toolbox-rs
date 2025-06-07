@@ -57,8 +57,10 @@ pub fn roots(coeffs: &[f64]) -> Vec<Complex64> {
     }
 
     // Eigenvalues of companion matrix == roots
-    let (eigenvalues, _) = companion_matrix.eig().unwrap();
-    eigenvalues.to_vec()
+    match companion_matrix.eig() {
+        Ok((eigenvalues, _)) => eigenvalues.to_vec(),
+        Err(_) => vec![],
+    }
 } 
 
 
