@@ -35,19 +35,19 @@ impl TransferFunction for DiscreteTransferFunction {
     }
 
     fn numerator(&self) -> &[f64] {
-        todo!()
+        &self.numerator
     }
 
     fn denominator(&self) -> &[f64] {
-        todo!()
+        &self.denominator
     }
 
     fn poles(&self) -> &[Complex64] {
-        todo!()
+        &self.poles
     }
 
     fn zeroes(&self) -> &[Complex64] {
-        todo!()
+        &self.zeroes
     }
 
     fn frequency_response(&self, omega: &[f64]) -> Vec<Complex64> {

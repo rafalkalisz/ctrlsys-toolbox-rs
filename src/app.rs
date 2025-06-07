@@ -1,15 +1,23 @@
 use eframe::egui;
 
-use crate::{plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot}, tf::{ctf::ContinousTransferFunction, TransferFunction}};
+use crate::{plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, TimeDomain, TransferFunction}};
 
 pub struct MainApp {
-    tf: Box<dyn TransferFunction>,
+    ctf: ContinousTransferFunction,
+    dtf: DiscreteTransferFunction,
+    selected_time_domain: TimeDomain,
 }
 
 impl Default for MainApp {
     fn default() -> Self {
+        let ctf = ContinousTransferFunction::from_numden(
+            vec![1.0], 
+            vec![1.0, 2.0, 2.0, 1.0]
+        );
         Self {
-            tf: Box::new(ContinousTransferFunction::from_numden(vec![1.0, 1.0], vec![1.0, 5.0, 6.0]))
+            dtf: DiscreteTransferFunction::from_ctf(&ctf, 1.0),
+            ctf,
+            selected_time_domain: TimeDomain::Continous,
         }
     }
 }
@@ -47,13 +55,17 @@ impl eframe::App for MainApp {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Bode Plot: Magnitude");
-                                bode_mag_plot(ui, self.tf.as_ref(), 0.0, 10.0, 100);
+                                bode_mag_plot(ui, &self.ctf, 0.0, 10.0, 100);
                             });
                         });
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Pole-Zero Plot");
-                                pzplot(ui, self.tf.as_ref());
+                                domain_switch(ui, &mut self.selected_time_domain);
+                                match self.selected_time_domain {
+                                    TimeDomain::Continous => pzplot(ui, &self.ctf),
+                                    TimeDomain::Discrete { sample_time: _ } => pzplot(ui, &self.dtf),
+                                }
                             });
                         });
                     });
@@ -61,7 +73,7 @@ impl eframe::App for MainApp {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Bode Plot: Phase");
-                                bode_phase_plot(ui, self.tf.as_ref(), 0.0, 10.0, 100);
+                                bode_phase_plot(ui, &self.ctf, 0.0, 10.0, 100);
                             });
                         });
                         row.col(|ui| {
@@ -83,11 +95,23 @@ impl eframe::App for MainApp {
                         });
                     });
                 });
-
         });
-
     }
 }
 
+fn domain_switch(ui: &mut egui::Ui, selected: &mut TimeDomain) {
+    ui.horizontal(|ui| {
+        ui.label("Select domain");
+        egui::ComboBox::from_id_salt("pzplot_domain_switch")
+            .selected_text(match selected {
+                TimeDomain::Continous => "Continous",
+                TimeDomain::Discrete { sample_time: _ } => "Discrete",
+            })
+            .show_ui(ui, |ui| {
+                ui.selectable_value(selected, TimeDomain::Continous, "Continuous");
+                ui.selectable_value(selected, TimeDomain::Discrete { sample_time: 0.0 }, "Discrete");
+            });
+    });
+}
 
 

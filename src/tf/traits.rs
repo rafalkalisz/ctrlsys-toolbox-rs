@@ -2,7 +2,7 @@ use ndarray::Array2;
 use ndarray_linalg::Eig;
 use num::complex::Complex64;
 
-
+#[derive(Debug, PartialEq)]
 pub enum TimeDomain {
     Continous,
     Discrete { sample_time: f64 }
