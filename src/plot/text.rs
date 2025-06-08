@@ -37,3 +37,14 @@ fn poly_text(coeffs: &[f64]) -> String {
 
     terms.join(" + ")
 }
+
+pub fn print_coeffs(coeffs: &[f64]) -> String {
+    let mut output = String::new();
+    for (i, &c) in coeffs.iter().enumerate() {
+        if i > 0 {
+            output.push_str(", ");
+        }
+        output.push_str(&format!("{:.6}", c));
+    }
+    output
+}

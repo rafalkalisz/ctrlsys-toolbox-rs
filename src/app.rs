@@ -1,6 +1,6 @@
 use eframe::{egui::{self, ComboBox}, App};
 
-use crate::{filter::sallenkey::butterworth_poles, plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot, text::tf_text}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, traits::coeff_from_pz, TimeDomain, TransferFunction}, util::poly::reduce_to_real};
+use crate::{filter::sallenkey::butterworth_poles, plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot, text::{print_coeffs, tf_text}}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, traits::coeff_from_pz, TimeDomain, TransferFunction}, util::poly::reduce_to_real};
 
 pub struct MainApp {
     ctf: ContinousTransferFunction,
@@ -10,7 +10,7 @@ pub struct MainApp {
     ctf_input_order: usize,
     ctf_input_num: Vec<f64>,
     ctf_input_den: Vec<f64>,
-    dtf_input_order: usize,
+    dtf_input_t_sample: f64,
     filter_input_type: FilterType,
     filter_input_order: usize,
     filter_input_cutoff: f64,
@@ -19,15 +19,15 @@ pub struct MainApp {
 
 impl Default for MainApp {
     fn default() -> Self {
-        let ctf_input_num = vec![0.0,1.0, 1.0];
-        let ctf_input_den = vec![1.0, 1.0, 4.25];
+        let ctf_input_num = vec![0.0, 0.0, 0.0, 1.0];
+        let ctf_input_den = vec![1.0, 2.0, 2.0, 1.0];
         let ctf = ContinousTransferFunction::from_numden(
-            trim_coeffs(ctf_input_num.clone()), 
-            trim_coeffs(ctf_input_den.clone()),
+            ctf_input_num.clone(), 
+            ctf_input_den.clone(),
         );
         Self {
             ctf_input_order: ctf_input_num.len() - 1,
-            dtf_input_order: ctf_input_den.len() - 1,
+            dtf_input_t_sample: 1.0,
             dtf: DiscreteTransferFunction::from_ctf(&ctf, 1.0),
             selected_time_domain: TimeDomain::Continous,
             tf_input: TfInput::Continous,
@@ -37,7 +37,7 @@ impl Default for MainApp {
             filter_input_type: FilterType::Butterworth,
             filter_input_order: 3,
             filter_input_cutoff: 1.0,
-            filter_input_normalize: false,
+            filter_input_normalize: true,
         }
     }
 }
@@ -52,7 +52,11 @@ impl MainApp {
             trim_coeffs(self.ctf_input_num.clone()), 
             trim_coeffs(self.ctf_input_den.clone())
         );
-        self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, 1.0);
+        self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, self.dtf_input_t_sample);
+    }
+
+    pub fn handle_dtf_input(&mut self) {
+        self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, self.dtf_input_t_sample);
     }
 
     fn handle_filter_input(&mut self) {
@@ -191,20 +195,31 @@ fn tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
 
     match app.tf_input {
         TfInput::Continous => {
-            ui.label("Enter continuous transfer function coefficients");
+            ui.label("Continuous transfer function input");
+            ui.separator();
             continuous_tf_input(ui, app);
         }
         TfInput::Discrete => {
-            ui.label("Enter continuous transfer function coefficients");
+            ui.label("Discrete implementation of specified transfer function");
+            ui.separator();
+            discrete_tf_input(ui, app);
+            ui.separator();
+            ui.label("Numerator coefficients");
+            ui.code(print_coeffs(app.dtf.numerator()));
+            ui.label("Denominator coefficients");
+            ui.code(print_coeffs(app.dtf.denominator()));
+
         }
         TfInput::Filter => {
             ui.label("Filter synthesis");
+            ui.separator();
             filter_input(ui, app);
         }
     }
 }
 
 fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
+    ui.label("Transfer function order");
     ui.horizontal(|ui| {
         // --- Order Setter ---
         let mut order = app.ctf_input_order as u32;
@@ -252,6 +267,19 @@ fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.monospace(ctf_text);
 
 
+}
+
+fn discrete_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
+    ui.label("Sample time (T):");
+    if ui.add(
+        egui::DragValue::new(&mut app.dtf_input_t_sample)
+            .speed(1e-3)
+            .range(1e-6..=1.0)
+            .prefix("T = ")
+            .suffix(" s"),
+    ).changed() {
+        app.handle_dtf_input();
+    }
 }
 
 #[derive(Debug, PartialEq)]
