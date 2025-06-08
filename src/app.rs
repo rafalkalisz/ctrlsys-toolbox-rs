@@ -94,6 +94,9 @@ fn trim_coeffs(coeffs: Vec<f64>) -> Vec<f64> {
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
 
+        let screen_height = ctx.screen_rect().height();
+        let row_height = screen_height / 3.0;
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
 
             egui::menu::bar(ui, |ui| {
@@ -114,7 +117,7 @@ impl eframe::App for MainApp {
                 .columns(egui_extras::Column::remainder(), 2)
                 .striped(true)
                 .body(|mut body| {
-                    body.row(480.0, |mut row| {
+                    body.row(row_height, |mut row| {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Bode Plot: Magnitude");
@@ -132,7 +135,7 @@ impl eframe::App for MainApp {
                             });
                         });
                     });
-                    body.row(480.0, |mut row| {
+                    body.row(row_height, |mut row| {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Bode Plot: Phase");
@@ -145,7 +148,7 @@ impl eframe::App for MainApp {
                             });
                         });
                     });
-                    body.row(480.0, |mut row| {
+                    body.row(row_height, |mut row| {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 tf_input(ui, self);
