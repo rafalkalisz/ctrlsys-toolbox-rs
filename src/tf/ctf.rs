@@ -1,6 +1,8 @@
 use num::complex::Complex64;
 
-use super::{traits::roots, TimeDomain, TransferFunction};
+use crate::util::poly::reduce_to_real;
+
+use super::{traits::{coeff_from_pz, roots}, TimeDomain, TransferFunction};
 
 #[derive(Debug, Clone)]
 pub struct ContinousTransferFunction {
@@ -17,6 +19,15 @@ impl ContinousTransferFunction {
             zeroes: roots(&numerator),
             numerator, 
             denominator,
+        }
+    }
+
+    pub fn from_pz(poles: Vec<Complex64>, zeroes: Vec<Complex64>) -> Self {
+        Self {
+            numerator: reduce_to_real(&coeff_from_pz(&zeroes)),
+            denominator: reduce_to_real(&coeff_from_pz(&poles)),
+            poles,
+            zeroes
         }
     }
 }

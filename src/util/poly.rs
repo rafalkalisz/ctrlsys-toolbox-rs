@@ -1,6 +1,6 @@
 
 use std::ops::{AddAssign, Mul};
-use num::{Zero};
+use num::{complex::Complex64, Zero};
 
 pub fn binomial_expansion(pow: usize, negative: bool) -> Vec<f64> {
     if negative {
@@ -37,6 +37,10 @@ where
         }
     }
     result
+}
+
+pub fn reduce_to_real(coeffs: &[Complex64]) -> Vec<f64> {
+    coeffs.iter().map(|&c| c.re).collect()
 }
 
 const fn build_pascal_triangle(max_pow: usize) -> [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] {
