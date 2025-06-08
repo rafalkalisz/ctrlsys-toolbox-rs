@@ -1,6 +1,6 @@
-use eframe::{egui, App};
+use eframe::{egui::{self, ComboBox}, App};
 
-use crate::{plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, TimeDomain, TransferFunction}};
+use crate::{filter::sallenkey::butterworth_poles, plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot, text::tf_text}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, traits::coeff_from_pz, TimeDomain, TransferFunction}, util::poly::reduce_to_real};
 
 pub struct MainApp {
     ctf: ContinousTransferFunction,
@@ -11,12 +11,15 @@ pub struct MainApp {
     ctf_input_num: Vec<f64>,
     ctf_input_den: Vec<f64>,
     dtf_input_order: usize,
+    filter_input_type: FilterType,
+    filter_input_order: usize,
+    filter_input_cutoff: f64,
 }
 
 impl Default for MainApp {
     fn default() -> Self {
-        let ctf_input_num = vec![0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-        let ctf_input_den = vec![1.0, 3.236, 5.236, 5.236, 3.236, 1.0];
+        let ctf_input_num = vec![0.0,1.0, 1.0];
+        let ctf_input_den = vec![1.0, 1.0, 4.25];
         let ctf = ContinousTransferFunction::from_numden(
             trim_coeffs(ctf_input_num.clone()), 
             trim_coeffs(ctf_input_den.clone()),
@@ -30,6 +33,9 @@ impl Default for MainApp {
             ctf_input_num,
             ctf_input_den,
             ctf,
+            filter_input_type: FilterType::Butterworth,
+            filter_input_order: 3,
+            filter_input_cutoff: 1.0,
         }
     }
 }
@@ -46,6 +52,21 @@ impl MainApp {
         );
         self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, 1.0);
     }
+
+    fn handle_filter_input(&mut self) {
+        let poles = match self.filter_input_type {
+            FilterType::Butterworth => butterworth_poles(self.filter_input_order, self.filter_input_cutoff),
+            _ => todo!("Not implemented yet")
+        };
+        let den = reduce_to_real(&coeff_from_pz(&poles));
+        self.ctf_input_order = den.len().saturating_sub(1);
+        let mut num = vec![0.0; self.ctf_input_order];
+        num.push(1.0);
+        self.ctf_input_num = num;
+        self.ctf_input_den = den;
+        self.handle_ctf_input();
+    }
+
 }
 
 fn trim_coeffs(coeffs: Vec<f64>) -> Vec<f64> {
@@ -84,7 +105,7 @@ impl eframe::App for MainApp {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Bode Plot: Magnitude");
-                                bode_mag_plot(ui, &self.ctf, 0.0, 10.0, 100);
+                                bode_mag_plot(ui, &self.ctf, 0.0, 10.0, 1000);
                             });
                         });
                         row.col(|ui| {
@@ -102,7 +123,7 @@ impl eframe::App for MainApp {
                         row.col(|ui| {
                             ui.group(|ui| {
                                 ui.heading("Bode Plot: Phase");
-                                bode_phase_plot(ui, &self.ctf, 0.0, 10.0, 100);
+                                bode_phase_plot(ui, &self.ctf, 0.0, 10.0, 1000);
                             });
                         });
                         row.col(|ui| {
@@ -169,6 +190,7 @@ fn tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
         }
         TfInput::Filter => {
             ui.label("Filter synthesis");
+            filter_input(ui, app);
         }
     }
 }
@@ -212,6 +234,47 @@ fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
                     app.handle_ctf_input();
                 };
             });
+        }
+    });
+
+    ui.separator();
+    ui.label("Transfer function equation:");
+    let ctf_text = tf_text(app.ctf.numerator(), app.ctf.denominator());
+    ui.monospace(ctf_text);
+
+
+}
+
+#[derive(Debug, PartialEq)]
+enum FilterType {
+    Butterworth,
+    Chebyshev,
+    Elliptic,
+}
+
+fn filter_input(ui: &mut egui::Ui, app: &mut MainApp) {
+    ui.horizontal(|ui| {
+        ui.label("Filter type");
+        ComboBox::from_id_salt("input_filter_type_select")
+        .selected_text(format!("{:?}", app.filter_input_type))
+        .show_ui(ui, |ui| {
+            ui.selectable_value(&mut app.filter_input_type, FilterType::Butterworth, "Butterworth");
+            ui.selectable_value(&mut app.filter_input_type, FilterType::Chebyshev, "Chebyshev (WIP)");
+            ui.selectable_value(&mut app.filter_input_type, FilterType::Elliptic, "Elliptic (WIP)");
+        })
+    });
+
+    ui.horizontal(|ui| {
+        ui.label("Order:");
+        if ui.add(egui::DragValue::new(&mut app.filter_input_order).range(1..=20)).changed() {
+            app.handle_filter_input();
+        }
+    });
+
+    ui.horizontal(|ui| {
+        ui.label("Cutoff frequency (normalized):");
+        if ui.add(egui::DragValue::new(&mut app.filter_input_cutoff).range(0.01..=1.0).speed(0.01)).changed() {
+            app.handle_filter_input();
         }
     });
 

@@ -2,6 +2,8 @@ use ndarray::Array2;
 use ndarray_linalg::Eig;
 use num::complex::Complex64;
 
+use crate::util::poly::convolve;
+
 #[derive(Debug, PartialEq)]
 pub enum TimeDomain {
     Continous,
@@ -64,4 +66,25 @@ pub fn roots(coeffs: &[f64]) -> Vec<Complex64> {
 } 
 
 
+pub fn coeff_from_pz(p_or_z: &[Complex64]) -> Vec<Complex64> {
+
+    p_or_z.iter().fold(
+        vec![Complex64::new(1.0, 0.0)], 
+        |acc, &pz| convolve(&acc, &vec![Complex64::new(1.0, 0.0), pz])
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::coeff_from_pz;
+    use num::complex::Complex64;
+
+    #[test]
+    fn test_coeff_from_pz() {
+        let z1 = Complex64::new(-1.0, 2.0);
+        let z2 = Complex64::new(-1.0, -2.0);
+        println!("{:?}", coeff_from_pz(&vec![z1, z2]));
+    }
+
+}
 
