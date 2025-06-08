@@ -1,4 +1,7 @@
 
+use std::ops::{AddAssign, Mul};
+use num::{Zero};
+
 pub fn binomial_expansion(pow: usize, negative: bool) -> Vec<f64> {
     if negative {
         NEG_PASCAL[pow][0..=pow].iter().map(|&x| x as f64).collect()
@@ -23,8 +26,11 @@ pub fn poly_add(a: &[f64], b: &[f64]) -> Vec<f64> {
     result
 }
 
-pub fn convolve(f: &[f64], g: &[f64]) -> Vec<f64> {
-    let mut result = vec![0.0; f.len() + g.len() - 1];
+pub fn convolve<T>(f: &[T], g: &[T]) -> Vec<T>
+where 
+    T: Copy + AddAssign + Mul<Output = T> + Zero,
+{
+    let mut result = vec![T::zero(); f.len() + g.len() - 1];
     for (i, &fi) in f.iter().enumerate() {
         for (j, &gj) in g.iter().enumerate() {
             result[i + j] += fi * gj;
