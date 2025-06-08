@@ -77,7 +77,7 @@ const fn build_neg_pascal_triangle(max_pow: usize) -> [[isize; MAX_ORDER + 1]; M
     triangle
 }
 
-const MAX_ORDER: usize = 10;
+const MAX_ORDER: usize = 20;
 pub const PASCAL: [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] = build_pascal_triangle(MAX_ORDER);
 pub const NEG_PASCAL: [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] = build_neg_pascal_triangle(MAX_ORDER);
 
