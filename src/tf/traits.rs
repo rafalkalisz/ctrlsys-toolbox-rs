@@ -70,7 +70,7 @@ pub fn coeff_from_pz(p_or_z: &[Complex64]) -> Vec<Complex64> {
 
     p_or_z.iter().fold(
         vec![Complex64::new(1.0, 0.0)], 
-        |acc, &pz| convolve(&acc, &vec![Complex64::new(1.0, 0.0), pz])
+        |acc, &pz| convolve(&acc, &vec![Complex64::new(1.0, 0.0), -pz])
     )
 }
 

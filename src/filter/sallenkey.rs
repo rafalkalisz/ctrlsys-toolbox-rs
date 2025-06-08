@@ -6,7 +6,7 @@ pub fn butterworth_poles(n: usize, omega_c: f64) -> Vec<Complex64> {
 
     let mut poles = Vec::with_capacity(n);
     for k in 0..n {
-        let theta = 3.0 * FRAC_PI_2 + (2 * k + 1) as f64 * PI / (2 * n) as f64; 
+        let theta = FRAC_PI_2 + (2 * k + 1) as f64 * PI / (2 * n) as f64; 
         poles.push(Complex64::from_polar(omega_c, theta))
     }
     poles
