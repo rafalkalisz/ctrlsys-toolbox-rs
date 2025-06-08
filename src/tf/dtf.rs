@@ -53,4 +53,8 @@ impl TransferFunction for DiscreteTransferFunction {
     fn frequency_response(&self, omega: &[f64]) -> Vec<Complex64> {
         todo!()
     }
+    
+    fn normalize_at_w(&mut self, w: f64) {
+        todo!()
+    }
 }

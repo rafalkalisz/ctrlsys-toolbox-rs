@@ -33,6 +33,8 @@ pub trait TransferFunction {
         self.denominator().len().saturating_sub(1)
     }
 
+    fn normalize_at_w(&mut self, w: f64);
+
 }
 
 // Based on MATLAB roots algorithm (see https://www.mathworks.com/help/matlab/ref/roots.html)

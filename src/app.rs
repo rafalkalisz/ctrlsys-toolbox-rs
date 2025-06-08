@@ -14,6 +14,7 @@ pub struct MainApp {
     filter_input_type: FilterType,
     filter_input_order: usize,
     filter_input_cutoff: f64,
+    filter_input_normalize: bool,
 }
 
 impl Default for MainApp {
@@ -36,6 +37,7 @@ impl Default for MainApp {
             filter_input_type: FilterType::Butterworth,
             filter_input_order: 3,
             filter_input_cutoff: 1.0,
+            filter_input_normalize: false,
         }
     }
 }
@@ -64,7 +66,14 @@ impl MainApp {
         num.push(1.0);
         self.ctf_input_num = num;
         self.ctf_input_den = den;
-        self.handle_ctf_input();
+        self.ctf = ContinousTransferFunction::from_numden(
+            trim_coeffs(self.ctf_input_num.clone()), 
+            trim_coeffs(self.ctf_input_den.clone())
+        );
+        if self.filter_input_normalize {
+            self.ctf.normalize_at_w(0.0); // TODO: w = 0 is good for LPF, but should be different for HPF/BPF
+        }
+        self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, 1.0);
     }
 
 }
@@ -274,6 +283,13 @@ fn filter_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.horizontal(|ui| {
         ui.label("Cutoff frequency (normalized):");
         if ui.add(egui::DragValue::new(&mut app.filter_input_cutoff).range(0.01..=1.0).speed(0.01)).changed() {
+            app.handle_filter_input();
+        }
+    });
+
+    ui.horizontal(|ui| {
+        ui.label("Normalize filter gain");
+        if ui.checkbox(&mut app.filter_input_normalize, "").changed() {
             app.handle_filter_input();
         }
     });

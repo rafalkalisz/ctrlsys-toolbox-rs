@@ -30,6 +30,7 @@ impl ContinousTransferFunction {
             zeroes
         }
     }
+    
 }
 
 impl TransferFunction for ContinousTransferFunction {
@@ -59,6 +60,18 @@ impl TransferFunction for ContinousTransferFunction {
     
     fn zeroes(&self) -> &[Complex64] {
         &self.zeroes
+    }
+    
+    fn normalize_at_w(&mut self, w: f64) {
+        let s = Complex64::new(0.0, w);
+        let h = self.evaluate(s);
+        let gain = 1.0 / h.norm();
+        if gain == 1.0 {
+            return;
+        }
+        for c in self.numerator.iter_mut() {
+            *c *= gain;
+        }
     }
     
 }
