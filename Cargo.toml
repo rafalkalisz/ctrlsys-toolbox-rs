@@ -9,5 +9,5 @@ eframe = "0.31.1"
 egui_extras = "0.31.1"
 egui_plot = "0.32.1"
 ndarray = "0.16.1"
-ndarray-linalg = "0.17.0"
+ndarray-linalg = { version = "0.17.0", features = ["openblas-static"] }
 num = "0.4.3"
