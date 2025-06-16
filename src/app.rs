@@ -1,6 +1,6 @@
 use eframe::{egui::{self, ComboBox}, App};
 
-use crate::{filter::sallenkey::butterworth_poles, plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot, text::{print_coeffs, tf_text}}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, traits::coeff_from_pz, TimeDomain, TransferFunction}, util::poly::reduce_to_real};
+use crate::{analysis::time::ResponseType, filter::sallenkey::butterworth_poles, plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot, response::open_loop_response_plot, text::{print_coeffs, tf_text}}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, traits::coeff_from_pz, TimeDomain, TransferFunction}, util::poly::reduce_to_real};
 
 pub struct MainApp {
     ctf: ContinousTransferFunction,
@@ -15,6 +15,8 @@ pub struct MainApp {
     filter_input_order: usize,
     filter_input_cutoff: f64,
     filter_input_normalize: bool,
+    response_type: ResponseType,
+    response_length: f64,
 }
 
 impl Default for MainApp {
@@ -27,8 +29,8 @@ impl Default for MainApp {
         );
         Self {
             ctf_input_order: ctf_input_num.len() - 1,
-            dtf_input_t_sample: 1.0,
-            dtf: DiscreteTransferFunction::from_ctf(&ctf, 1.0),
+            dtf_input_t_sample: 0.1,
+            dtf: DiscreteTransferFunction::from_ctf(&ctf, 0.1),
             selected_time_domain: TimeDomain::Continous,
             tf_input: TfInput::Continous,
             ctf_input_num,
@@ -38,6 +40,8 @@ impl Default for MainApp {
             filter_input_order: 3,
             filter_input_cutoff: 1.0,
             filter_input_normalize: true,
+            response_type: ResponseType::Step,
+            response_length: 20.0,
         }
     }
 }
@@ -72,7 +76,7 @@ impl MainApp {
         self.ctf_input_den = den;
         self.ctf = ContinousTransferFunction::from_numden(
             trim_coeffs(self.ctf_input_num.clone()), 
-            trim_coeffs(self.ctf_input_den.clone())
+            trim_coeffs(self.ctf_input_den.clone()),
         );
         if self.filter_input_normalize {
             self.ctf.normalize_at_w(0.0); // TODO: w = 0 is good for LPF, but should be different for HPF/BPF
@@ -144,7 +148,24 @@ impl eframe::App for MainApp {
                         });
                         row.col(|ui| {
                             ui.group(|ui| {
-                                ui.label("Impulse response placeholder");
+                                ui.heading("Open-loop Response Plot");
+                                ui.horizontal(|ui| {
+                                    ui.label("Response Type: ");
+                                    egui::ComboBox::from_id_salt("response_type_switch")
+                                        .selected_text(match self.response_type {
+                                            ResponseType::Impulse => "Impulse",
+                                            ResponseType::Step => "Step",
+                                            ResponseType::Ramp => "Ramp",
+                                        })
+                                        .show_ui(ui, |ui| {
+                                            ui.selectable_value(&mut self.response_type, ResponseType::Impulse, "Impulse");
+                                            ui.selectable_value(&mut self.response_type, ResponseType::Step, "Step");
+                                            ui.selectable_value(&mut self.response_type, ResponseType::Ramp, "Ramp");
+                                        });
+                                    ui.label("Response Plot Duration");
+                                    ui.add(egui::DragValue::new(&mut self.response_length).speed(0.1));
+                                });
+                                open_loop_response_plot(ui, &self.dtf, self.response_type, self.response_length);
                             });
                         });
                     });
@@ -327,8 +348,3 @@ fn filter_input(ui: &mut egui::Ui, app: &mut MainApp) {
 
 
 }
-
-
-
-
-
