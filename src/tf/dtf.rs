@@ -27,6 +27,8 @@ impl DiscreteTransferFunction {
         Self::from_numden(numerator, denominator, sample_time)
     }
 
+    pub fn sample_time(&self) -> f64 { self.sample_time }
+
 }
 
 impl TransferFunction for DiscreteTransferFunction {
