@@ -11,12 +11,45 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      # Checkout repository
+      - uses: actions/checkout@v4
+
+      # Install Rust toolchain
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      # Build release binary
+      - name: Build (release)
+        run: cargo build --release --verbose
+
+      # Run tests
+      - name: Run tests
+        run: cargo test --verbose
+
+      # Package binary with version
+      - name: Package binary with version
+        id: package
+        run: |
+          VERSION=$(cargo pkgid | sed 's/.*#//')
+          echo "Version: $VERSION"
+
+          mkdir -p dist
+          cp target/release/ctrlsys-toolbox-rs dist/
+
+          TARFILE=ctrlsys-toolbox-rs-$VERSION-linux-x86_64.tar.gz
+          tar -czvf $TARFILE -C dist ctrlsys-toolbox-rs
+
+          echo "TARFILE=$TARFILE" >> $GITHUB_ENV
+
+      # Upload artifact
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctrlsys-toolbox-rs
+          path: ${{ env.TARFILE }}
