@@ -1,11 +1,28 @@
-use eframe::{egui::{self, ComboBox}, App};
+use eframe::{
+    App,
+    egui::{self, ComboBox},
+};
 
-use crate::{analysis::time::ResponseType, filter::sallenkey::butterworth_poles, plot::{bode::{bode_mag_plot, bode_phase_plot}, pz::pzplot, response::open_loop_response_plot, text::{print_coeffs, tf_text}}, tf::{ctf::ContinousTransferFunction, dtf::DiscreteTransferFunction, traits::coeff_from_pz, TimeDomain, TransferFunction}, util::poly::reduce_to_real};
+use crate::{
+    analysis::time::ResponseType,
+    filter::sallenkey::butterworth_poles,
+    plot::{
+        bode::{bode_mag_plot, bode_phase_plot},
+        pz::pzplot,
+        response::open_loop_response_plot,
+        text::{print_coeffs, tf_text},
+    },
+    tf::{
+        TimeDomain, TransferFunction, ctf::ContinousTransferFunction,
+        dtf::DiscreteTransferFunction, traits::coeff_from_pz,
+    },
+    util::poly::reduce_to_real,
+};
 
 pub struct MainApp {
-    ctf: ContinousTransferFunction,
-    dtf: DiscreteTransferFunction,
-    selected_time_domain: TimeDomain,
+    ctf: ContinousTransferFunction<f64>,
+    dtf: DiscreteTransferFunction<f64>,
+    selected_time_domain: TimeDomain<f64>,
     tf_input: TfInput,
     ctf_input_order: usize,
     ctf_input_num: Vec<f64>,
@@ -23,10 +40,7 @@ impl Default for MainApp {
     fn default() -> Self {
         let ctf_input_num = vec![0.0, 0.0, 0.0, 1.0];
         let ctf_input_den = vec![1.0, 2.0, 2.0, 1.0];
-        let ctf = ContinousTransferFunction::from_numden(
-            ctf_input_num.clone(), 
-            ctf_input_den.clone(),
-        );
+        let ctf = ContinousTransferFunction::<f64>::from_numden(&ctf_input_num, &ctf_input_den);
         Self {
             ctf_input_order: ctf_input_num.len() - 1,
             dtf_input_t_sample: 0.1,
@@ -52,9 +66,9 @@ impl MainApp {
     }
 
     pub fn handle_ctf_input(&mut self) {
-        self.ctf = ContinousTransferFunction::from_numden(
-            trim_coeffs(self.ctf_input_num.clone()), 
-            trim_coeffs(self.ctf_input_den.clone())
+        self.ctf = ContinousTransferFunction::<f64>::from_numden(
+            &trim_coeffs(&self.ctf_input_num),
+            &trim_coeffs(&self.ctf_input_den),
         );
         self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, self.dtf_input_t_sample);
     }
@@ -65,8 +79,10 @@ impl MainApp {
 
     fn handle_filter_input(&mut self) {
         let poles = match self.filter_input_type {
-            FilterType::Butterworth => butterworth_poles(self.filter_input_order, self.filter_input_cutoff),
-            _ => todo!("Not implemented yet")
+            FilterType::Butterworth => {
+                butterworth_poles(self.filter_input_order, self.filter_input_cutoff)
+            }
+            _ => todo!("Not implemented yet"),
         };
         let den = reduce_to_real(&coeff_from_pz(&poles));
         self.ctf_input_order = den.len().saturating_sub(1);
@@ -74,35 +90,33 @@ impl MainApp {
         num.push(1.0);
         self.ctf_input_num = num;
         self.ctf_input_den = den;
-        self.ctf = ContinousTransferFunction::from_numden(
-            trim_coeffs(self.ctf_input_num.clone()), 
-            trim_coeffs(self.ctf_input_den.clone()),
+        self.ctf = ContinousTransferFunction::<f64>::from_numden(
+            &trim_coeffs(&self.ctf_input_num),
+            &trim_coeffs(&self.ctf_input_den),
         );
         if self.filter_input_normalize {
             self.ctf.normalize_at_w(0.0); // TODO: w = 0 is good for LPF, but should be different for HPF/BPF
         }
         self.dtf = DiscreteTransferFunction::from_ctf(&self.ctf, 1.0);
     }
-
 }
 
-fn trim_coeffs(coeffs: Vec<f64>) -> Vec<f64> {
+// TODO: consider returning slice
+fn trim_coeffs(coeffs: &[f64]) -> Vec<f64> {
     let first_nonzero = coeffs
         .iter()
         .position(|&c| c.abs() >= 1e-12)
         .unwrap_or(coeffs.len().saturating_sub(1));
-    
+
     coeffs[first_nonzero..].to_vec()
 }
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
-
         let screen_height = ctx.screen_rect().height();
         let row_height = screen_height / 3.0;
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Quit").clicked() {
@@ -114,9 +128,7 @@ impl eframe::App for MainApp {
             egui::widgets::global_theme_preference_buttons(ui);
         });
 
-
         egui::CentralPanel::default().show(ctx, |ui| {
-
             egui_extras::TableBuilder::new(ui)
                 .columns(egui_extras::Column::remainder(), 2)
                 .striped(true)
@@ -134,7 +146,9 @@ impl eframe::App for MainApp {
                                 domain_switch(ui, &mut self.selected_time_domain);
                                 match self.selected_time_domain {
                                     TimeDomain::Continous => pzplot(ui, &self.ctf),
-                                    TimeDomain::Discrete { sample_time: _ } => pzplot(ui, &self.dtf),
+                                    TimeDomain::Discrete { sample_time: _ } => {
+                                        pzplot(ui, &self.dtf)
+                                    }
                                 }
                             });
                         });
@@ -158,14 +172,33 @@ impl eframe::App for MainApp {
                                             ResponseType::Ramp => "Ramp",
                                         })
                                         .show_ui(ui, |ui| {
-                                            ui.selectable_value(&mut self.response_type, ResponseType::Impulse, "Impulse");
-                                            ui.selectable_value(&mut self.response_type, ResponseType::Step, "Step");
-                                            ui.selectable_value(&mut self.response_type, ResponseType::Ramp, "Ramp");
+                                            ui.selectable_value(
+                                                &mut self.response_type,
+                                                ResponseType::Impulse,
+                                                "Impulse",
+                                            );
+                                            ui.selectable_value(
+                                                &mut self.response_type,
+                                                ResponseType::Step,
+                                                "Step",
+                                            );
+                                            ui.selectable_value(
+                                                &mut self.response_type,
+                                                ResponseType::Ramp,
+                                                "Ramp",
+                                            );
                                         });
                                     ui.label("Response Plot Duration");
-                                    ui.add(egui::DragValue::new(&mut self.response_length).speed(0.1));
+                                    ui.add(
+                                        egui::DragValue::new(&mut self.response_length).speed(0.1),
+                                    );
                                 });
-                                open_loop_response_plot(ui, &self.dtf, self.response_type, self.response_length);
+                                open_loop_response_plot(
+                                    ui,
+                                    &self.dtf,
+                                    self.response_type,
+                                    self.response_length,
+                                );
                             });
                         });
                     });
@@ -186,7 +219,7 @@ impl eframe::App for MainApp {
     }
 }
 
-fn domain_switch(ui: &mut egui::Ui, selected: &mut TimeDomain) {
+fn domain_switch(ui: &mut egui::Ui, selected: &mut TimeDomain<f64>) {
     ui.horizontal(|ui| {
         ui.label("Select domain");
         egui::ComboBox::from_id_salt("pzplot_domain_switch")
@@ -196,7 +229,11 @@ fn domain_switch(ui: &mut egui::Ui, selected: &mut TimeDomain) {
             })
             .show_ui(ui, |ui| {
                 ui.selectable_value(selected, TimeDomain::Continous, "Continuous");
-                ui.selectable_value(selected, TimeDomain::Discrete { sample_time: 0.0 }, "Discrete");
+                ui.selectable_value(
+                    selected,
+                    TimeDomain::Discrete { sample_time: 0.0 },
+                    "Discrete",
+                );
             });
     });
 }
@@ -210,11 +247,19 @@ enum TfInput {
 
 fn tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.horizontal(|ui| {
-        ui.selectable_value(&mut app.tf_input, TfInput::Continous, "Continuous transfer function");
-        ui.selectable_value(&mut app.tf_input, TfInput::Discrete, "Discrete transfer function");
+        ui.selectable_value(
+            &mut app.tf_input,
+            TfInput::Continous,
+            "Continuous transfer function",
+        );
+        ui.selectable_value(
+            &mut app.tf_input,
+            TfInput::Discrete,
+            "Discrete transfer function",
+        );
         ui.selectable_value(&mut app.tf_input, TfInput::Filter, "Filter synthesis");
     });
-    
+
     ui.separator();
 
     match app.tf_input {
@@ -232,7 +277,6 @@ fn tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
             ui.code(print_coeffs(app.dtf.numerator()));
             ui.label("Denominator coefficients");
             ui.code(print_coeffs(app.dtf.denominator()));
-
         }
         TfInput::Filter => {
             ui.label("Filter synthesis");
@@ -247,7 +291,14 @@ fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.horizontal(|ui| {
         // --- Order Setter ---
         let mut order = app.ctf_input_order as u32;
-        if ui.add(egui::Slider::new(&mut order, 0..=20).show_value(true).step_by(1.0)).changed() {
+        if ui
+            .add(
+                egui::Slider::new(&mut order, 0..=20)
+                    .show_value(true)
+                    .step_by(1.0),
+            )
+            .changed()
+        {
             app.ctf_input_order = order as usize;
 
             // Resize coefficient vectors (highest order first)
@@ -259,11 +310,14 @@ fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.separator();
     ui.label("Numerator (highest order first):");
     ui.horizontal(|ui| {
-        for i in 0..= app.ctf_input_order {
+        for i in 0..=app.ctf_input_order {
             let idx = app.ctf_input_order - i;
             ui.vertical(|ui| {
                 ui.label(format!("b[{}]", idx));
-                if ui.add(egui::DragValue::new(&mut app.ctf_input_num[i]).speed(0.1)).changed() {
+                if ui
+                    .add(egui::DragValue::new(&mut app.ctf_input_num[i]).speed(0.1))
+                    .changed()
+                {
                     app.handle_ctf_input();
                 };
             });
@@ -274,11 +328,14 @@ fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
 
     ui.label("Denominator (highest order first):");
     ui.horizontal(|ui| {
-        for i in 0..= app.ctf_input_order {
+        for i in 0..=app.ctf_input_order {
             let idx = app.ctf_input_order - i;
             ui.vertical(|ui| {
                 ui.label(format!("a[{}]", idx));
-                if ui.add(egui::DragValue::new(&mut app.ctf_input_den[i]).speed(0.1)).changed() {
+                if ui
+                    .add(egui::DragValue::new(&mut app.ctf_input_den[i]).speed(0.1))
+                    .changed()
+                {
                     app.handle_ctf_input();
                 };
             });
@@ -289,19 +346,20 @@ fn continuous_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.label("Transfer function equation:");
     let ctf_text = tf_text(app.ctf.numerator(), app.ctf.denominator());
     ui.monospace(ctf_text);
-
-
 }
 
 fn discrete_tf_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.label("Sample time (T):");
-    if ui.add(
-        egui::DragValue::new(&mut app.dtf_input_t_sample)
-            .speed(1e-3)
-            .range(1e-6..=1.0)
-            .prefix("T = ")
-            .suffix(" s"),
-    ).changed() {
+    if ui
+        .add(
+            egui::DragValue::new(&mut app.dtf_input_t_sample)
+                .speed(1e-3)
+                .range(1e-6..=1.0)
+                .prefix("T = ")
+                .suffix(" s"),
+        )
+        .changed()
+    {
         app.handle_dtf_input();
     }
 }
@@ -317,24 +375,46 @@ fn filter_input(ui: &mut egui::Ui, app: &mut MainApp) {
     ui.horizontal(|ui| {
         ui.label("Filter type");
         ComboBox::from_id_salt("input_filter_type_select")
-        .selected_text(format!("{:?}", app.filter_input_type))
-        .show_ui(ui, |ui| {
-            ui.selectable_value(&mut app.filter_input_type, FilterType::Butterworth, "Butterworth");
-            ui.selectable_value(&mut app.filter_input_type, FilterType::Chebyshev, "Chebyshev (WIP)");
-            ui.selectable_value(&mut app.filter_input_type, FilterType::Elliptic, "Elliptic (WIP)");
-        })
+            .selected_text(format!("{:?}", app.filter_input_type))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut app.filter_input_type,
+                    FilterType::Butterworth,
+                    "Butterworth",
+                );
+                ui.selectable_value(
+                    &mut app.filter_input_type,
+                    FilterType::Chebyshev,
+                    "Chebyshev (WIP)",
+                );
+                ui.selectable_value(
+                    &mut app.filter_input_type,
+                    FilterType::Elliptic,
+                    "Elliptic (WIP)",
+                );
+            })
     });
 
     ui.horizontal(|ui| {
         ui.label("Order:");
-        if ui.add(egui::DragValue::new(&mut app.filter_input_order).range(1..=20)).changed() {
+        if ui
+            .add(egui::DragValue::new(&mut app.filter_input_order).range(1..=20))
+            .changed()
+        {
             app.handle_filter_input();
         }
     });
 
     ui.horizontal(|ui| {
         ui.label("Cutoff frequency (normalized):");
-        if ui.add(egui::DragValue::new(&mut app.filter_input_cutoff).range(0.01..=1.0).speed(0.01)).changed() {
+        if ui
+            .add(
+                egui::DragValue::new(&mut app.filter_input_cutoff)
+                    .range(0.01..=1.0)
+                    .speed(0.01),
+            )
+            .changed()
+        {
             app.handle_filter_input();
         }
     });
@@ -345,6 +425,5 @@ fn filter_input(ui: &mut egui::Ui, app: &mut MainApp) {
             app.handle_filter_input();
         }
     });
-
-
 }
+

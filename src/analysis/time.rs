@@ -25,7 +25,7 @@ pub fn generate_input(response_type: ResponseType, count: usize, ts: f64) -> Vec
 }
 
 pub fn open_loop_response(
-    tf: &DiscreteTransferFunction,
+    tf: &DiscreteTransferFunction<f64>,
     response_type: ResponseType,
     count: usize,
 ) -> Vec<ResponsePoint> {
@@ -64,4 +64,3 @@ pub fn open_loop_response(
         })
         .collect()
 }
-

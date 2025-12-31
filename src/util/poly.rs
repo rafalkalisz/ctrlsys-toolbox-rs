@@ -1,6 +1,5 @@
-
-use std::ops::{AddAssign, Mul};
-use num::{complex::Complex64, Zero};
+use num::{Float, Zero, complex::Complex};
+use std::ops::{Add, AddAssign, Mul};
 
 pub fn binomial_expansion(pow: usize, negative: bool) -> Vec<f64> {
     if negative {
@@ -8,12 +7,14 @@ pub fn binomial_expansion(pow: usize, negative: bool) -> Vec<f64> {
     } else {
         PASCAL[pow][0..=pow].iter().map(|&x| x as f64).collect()
     }
-
 }
 
-pub fn poly_add(a: &[f64], b: &[f64]) -> Vec<f64> {
+pub fn poly_add<T>(a: &[T], b: &[T]) -> Vec<T>
+where
+    T: Copy + AddAssign + Zero,
+{
     let len = a.len().max(b.len());
-    let mut result = vec![0.0; len];
+    let mut result = vec![T::zero(); len];
     let offset_a = len - a.len();
     let offset_b = len - b.len();
 
@@ -27,25 +28,26 @@ pub fn poly_add(a: &[f64], b: &[f64]) -> Vec<f64> {
 }
 
 pub fn convolve<T>(f: &[T], g: &[T]) -> Vec<T>
-where 
-    T: Copy + AddAssign + Mul<Output = T> + Zero,
+where
+    T: Copy + Add<Output = T> + Mul<Output = T> + Zero,
 {
     let mut result = vec![T::zero(); f.len() + g.len() - 1];
     for (i, &fi) in f.iter().enumerate() {
         for (j, &gj) in g.iter().enumerate() {
-            result[i + j] += fi * gj;
+            // Workaround for num::Complex<T> not implementing AddAssign
+            result[i + j] = result[i + j] + fi * gj;
         }
     }
     result
 }
 
-pub fn reduce_to_real(coeffs: &[Complex64]) -> Vec<f64> {
+pub fn reduce_to_real<T: Copy>(coeffs: &[Complex<T>]) -> Vec<T> {
     coeffs.iter().map(|&c| c.re).collect()
 }
 
 const fn build_pascal_triangle(max_pow: usize) -> [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] {
     // Represent triangle as square array... ( ͠° ͟ʖ ͡°)
-    let mut triangle = [[0; MAX_ORDER + 1]; MAX_ORDER + 1]; 
+    let mut triangle = [[0; MAX_ORDER + 1]; MAX_ORDER + 1];
     triangle[0][0] = 1;
     let mut i = 1;
     // No for loops because const fn
@@ -53,7 +55,7 @@ const fn build_pascal_triangle(max_pow: usize) -> [[isize; MAX_ORDER + 1]; MAX_O
         triangle[i][0] = 1;
         let mut j = 1;
         while j <= i {
-            triangle[i][j] = triangle[i-1][j-1] + triangle[i-1][j];
+            triangle[i][j] = triangle[i - 1][j - 1] + triangle[i - 1][j];
             j += 1;
         }
         i += 1;
@@ -79,9 +81,8 @@ const fn build_neg_pascal_triangle(max_pow: usize) -> [[isize; MAX_ORDER + 1]; M
 
 const MAX_ORDER: usize = 20;
 pub const PASCAL: [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] = build_pascal_triangle(MAX_ORDER);
-pub const NEG_PASCAL: [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] = build_neg_pascal_triangle(MAX_ORDER);
-
-
+pub const NEG_PASCAL: [[isize; MAX_ORDER + 1]; MAX_ORDER + 1] =
+    build_neg_pascal_triangle(MAX_ORDER);
 
 #[cfg(test)]
 mod tests {
@@ -109,3 +110,4 @@ mod tests {
         assert_eq!(NEG_PASCAL[6][3], -20);
     }
 }
+

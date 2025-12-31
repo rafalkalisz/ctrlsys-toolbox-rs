@@ -7,7 +7,7 @@ pub struct BodePoint {
     pub phase_rad: f64,
 }
 
-pub fn bode_data(tf: &dyn TransferFunction, omega: &[f64]) -> Vec<BodePoint> {
+pub fn bode_data(tf: &dyn TransferFunction<f64>, omega: &[f64]) -> Vec<BodePoint> {
     tf.frequency_response(omega)
         .iter()
         .zip(omega.iter())
@@ -19,12 +19,14 @@ pub fn bode_data(tf: &dyn TransferFunction, omega: &[f64]) -> Vec<BodePoint> {
         .collect()
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::FRAC_PI_4;
+    use crate::{
+        analysis::{linspace, logspace},
+        tf::ctf::ContinousTransferFunction,
+    };
     use approx::assert_relative_eq;
-    use crate::{analysis::{linspace, logspace}, tf::ctf::ContinousTransferFunction};
+    use std::f64::consts::FRAC_PI_4;
 
     use super::*;
 
@@ -59,7 +61,7 @@ mod tests {
         // Given
         // H(s) = 1 / (s + 1) (1st-order low-pass filter)
         // omega = 1 rad/s
-        let tf = ContinousTransferFunction::from_numden(vec![1.0], vec![1.0, 1.0]);
+        let tf = ContinousTransferFunction::<f64>::from_numden(&[1.0], &[1.0, 1.0]);
         let omega = vec![1.0];
 
         // When
@@ -73,3 +75,4 @@ mod tests {
         assert_relative_eq!(-FRAC_PI_4, cutoff.phase_rad, epsilon = 1e-2)
     }
 }
+

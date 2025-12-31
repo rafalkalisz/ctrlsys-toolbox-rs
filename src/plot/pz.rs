@@ -1,16 +1,19 @@
 use eframe::egui::{self, Color32};
-use egui_plot::{PlotItem, PlotPoint, Polygon, Text};
-use num::complex::Complex64;
 
 use crate::tf::{TimeDomain, TransferFunction};
 
-pub fn pzplot(ui: &mut egui::Ui, tf: &dyn TransferFunction) {
-
+pub fn pzplot(ui: &mut egui::Ui, tf: &dyn TransferFunction<f64>) {
     let poles = tf.poles();
     let zeroes = tf.zeroes();
 
-    let pole_coords: Vec<[f64; 2]> = poles.iter().map(|complex| [complex.re, complex.im]).collect();
-    let zero_coords: Vec<[f64; 2]> = zeroes.iter().map(|complex| [complex.re, complex.im]).collect();
+    let pole_coords: Vec<[f64; 2]> = poles
+        .iter()
+        .map(|complex| [complex.re, complex.im])
+        .collect();
+    let zero_coords: Vec<[f64; 2]> = zeroes
+        .iter()
+        .map(|complex| [complex.re, complex.im])
+        .collect();
 
     let pole_points = egui_plot::Points::new("poles", pole_coords)
         .color(egui::Color32::MAGENTA)
@@ -43,3 +46,4 @@ pub fn pzplot(ui: &mut egui::Ui, tf: &dyn TransferFunction) {
             }
         });
 }
+
