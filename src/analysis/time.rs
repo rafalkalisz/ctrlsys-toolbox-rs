@@ -12,6 +12,18 @@ pub struct ResponsePoint {
     pub mag: f64,
 }
 
+pub fn generate_input(response_type: ResponseType, count: usize, ts: f64) -> Vec<f64> {
+    match response_type {
+        ResponseType::Impulse => {
+            let mut x_tmp = vec![0.0; count];
+            x_tmp[0] = 1.0;
+            x_tmp
+        }
+        ResponseType::Step => vec![1.0; count],
+        ResponseType::Ramp => (0..count).map(|i| i as f64 * ts).collect(),
+    }
+}
+
 pub fn open_loop_response(
     tf: &DiscreteTransferFunction,
     response_type: ResponseType,
@@ -24,16 +36,7 @@ pub fn open_loop_response(
         return vec![];
     }
 
-    let x = match response_type {
-        ResponseType::Impulse => {
-            let mut x_tmp = vec![0.0; count];
-            x_tmp[0] = 1.0;
-            x_tmp
-        }
-        ResponseType::Step => vec![1.0; count],
-        ResponseType::Ramp => (0..count).map(|i| i as f64 * tf.sample_time()).collect(),
-    };
-
+    let x = generate_input(response_type, count, tf.sample_time());
     let mut y = vec![0.0; count];
 
     for n in 0..count {
