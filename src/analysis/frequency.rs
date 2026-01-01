@@ -1,19 +1,21 @@
+use num::Float;
+
 use crate::tf::TransferFunction;
 
 #[derive(Debug, Clone, Copy)]
-pub struct BodePoint {
-    pub omega: f64,
-    pub mag_db: f64,
-    pub phase_rad: f64,
+pub struct BodePoint<T: Float> {
+    pub omega: T,
+    pub mag_db: T,
+    pub phase_rad: T,
 }
 
-pub fn bode_data(tf: &dyn TransferFunction<f64>, omega: &[f64]) -> Vec<BodePoint> {
+pub fn bode_data<T: Float>(tf: &dyn TransferFunction<T>, omega: &[T]) -> Vec<BodePoint<T>> {
     tf.frequency_response(omega)
         .iter()
         .zip(omega.iter())
         .map(|(h, &w)| BodePoint {
             omega: w,
-            mag_db: 20.0 * h.norm().log10(),
+            mag_db: T::from(20.0).unwrap() * h.norm().log10(),
             phase_rad: h.arg(),
         })
         .collect()
@@ -21,40 +23,11 @@ pub fn bode_data(tf: &dyn TransferFunction<f64>, omega: &[f64]) -> Vec<BodePoint
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        analysis::{linspace, logspace},
-        tf::ctf::ContinousTransferFunction,
-    };
+    use crate::tf::ctf::ContinousTransferFunction;
     use approx::assert_relative_eq;
     use std::f64::consts::FRAC_PI_4;
 
     use super::*;
-
-    #[test]
-    fn test_linpace() {
-        // Given
-        let (start, stop, count) = (100.0, 500.0, 5);
-
-        // When
-        let result = linspace(start, stop, count);
-
-        // Then
-        let expected = vec![100.0, 200.0, 300.0, 400.0, 500.0];
-        assert_eq!(expected, result);
-    }
-
-    #[test]
-    fn test_logspace() {
-        // Given
-        let (start_exp, stop_exp, count) = (0.0, 5.0, 6);
-
-        // When
-        let result = logspace(start_exp, stop_exp, count);
-
-        // Then
-        let expected = vec![1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0];
-        assert_eq!(expected, result);
-    }
 
     #[test]
     fn test_bode_data() {
@@ -75,4 +48,3 @@ mod tests {
         assert_relative_eq!(-FRAC_PI_4, cutoff.phase_rad, epsilon = 1e-2)
     }
 }
-
