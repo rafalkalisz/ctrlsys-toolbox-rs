@@ -753,16 +753,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctrlsys-toolbox-rs"
-version = "0.1.0"
+name = "ctrlsys_toolbox_core"
+version = "0.2.0"
 dependencies = [
  "approx",
- "eframe",
- "egui_extras",
- "egui_plot",
  "ndarray",
  "ndarray-linalg",
  "num",
+]
+
+[[package]]
+name = "ctrlsys_toolbox_gui"
+version = "0.2.0"
+dependencies = [
+ "ctrlsys_toolbox_core",
+ "eframe",
+ "egui_extras",
+ "egui_plot",
 ]
 
 [[package]]

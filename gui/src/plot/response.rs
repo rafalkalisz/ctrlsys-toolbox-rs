@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{
+use ctrlsys_toolbox_core::{
     analysis::time::{ResponseType, open_loop_response},
     tf::dtf::DiscreteTransferFunction,
 };
@@ -26,4 +26,3 @@ pub fn open_loop_response_plot(
         plot_ui.line(egui_plot::Line::new("H(s)", response_points));
     });
 }
-

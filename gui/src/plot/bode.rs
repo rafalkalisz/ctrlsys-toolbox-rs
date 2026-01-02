@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{
+use ctrlsys_toolbox_core::{
     analysis::{frequency::bode_data, linspace},
     tf::TransferFunction,
 };
@@ -46,4 +46,3 @@ pub fn bode_phase_plot(
         plot_ui.line(egui_plot::Line::new("H(s)", phase_points));
     });
 }
-

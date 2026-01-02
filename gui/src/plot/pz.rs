@@ -1,6 +1,6 @@
 use eframe::egui::{self, Color32};
 
-use crate::tf::{TimeDomain, TransferFunction};
+use ctrlsys_toolbox_core::tf::{TimeDomain, TransferFunction};
 
 pub fn pzplot(ui: &mut egui::Ui, tf: &dyn TransferFunction<f64>) {
     let poles = tf.poles();
@@ -46,4 +46,3 @@ pub fn pzplot(ui: &mut egui::Ui, tf: &dyn TransferFunction<f64>) {
             }
         });
 }
-

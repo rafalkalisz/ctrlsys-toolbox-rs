@@ -1,0 +1,10 @@
+[package]
+name = "ctrlsys_toolbox_core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ndarray = "0.16.1"
+ndarray-linalg = { version = "0.17.0", features = ["openblas-static"] }
+num = "0.4.3"
+approx = "0.5.1"

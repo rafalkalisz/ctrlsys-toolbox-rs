@@ -3,20 +3,21 @@ use eframe::{
     egui::{self, ComboBox},
 };
 
-use crate::{
+use ctrlsys_toolbox_core::{
     analysis::time::ResponseType,
     filter::sallenkey::butterworth_poles,
-    plot::{
-        bode::{bode_mag_plot, bode_phase_plot},
-        pz::pzplot,
-        response::open_loop_response_plot,
-        text::{print_coeffs, tf_text},
-    },
     tf::{
         TimeDomain, TransferFunction, ctf::ContinousTransferFunction,
         dtf::DiscreteTransferFunction, traits::coeff_from_pz,
     },
     util::poly::reduce_to_real,
+};
+
+use crate::plot::{
+    bode::{bode_mag_plot, bode_phase_plot},
+    pz::pzplot,
+    response::open_loop_response_plot,
+    text::{print_coeffs, tf_text},
 };
 
 pub struct MainApp {
@@ -426,4 +427,3 @@ fn filter_input(ui: &mut egui::Ui, app: &mut MainApp) {
         }
     });
 }
-
