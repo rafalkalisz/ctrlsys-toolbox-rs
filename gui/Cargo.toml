@@ -1,0 +1,10 @@
+[package]
+name = "ctrlsys_toolbox_gui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ctrlsys_toolbox_core = { path = "../core" }
+eframe = "0.31.1"
+egui_extras = "0.31.1"
+egui_plot = "0.32.1"
