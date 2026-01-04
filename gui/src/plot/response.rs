@@ -1,7 +1,7 @@
 use eframe::egui;
 
 use ctrlsys_toolbox_core::{
-    analysis::time::{ResponseType, open_loop_response},
+    analysis::time::{ResponseSimulator, ResponseType},
     tf::dtf::DiscreteTransferFunction,
 };
 
@@ -17,9 +17,12 @@ pub fn open_loop_response_plot(
     if point_count > MAX_POINTS {
         return;
     }
-    let response_points: Vec<[f64; 2]> = open_loop_response(tf, response_type, point_count)
+
+    let mut simulator = ResponseSimulator::new(tf);
+    let response_points: Vec<[f64; 2]> = simulator
+        .get_response(response_type, point_count)
         .iter()
-        .map(|response_point| [response_point.time, response_point.mag])
+        .map(|point| [point.time, point.mag])
         .collect();
 
     egui_plot::Plot::new("impulse").show(ui, |plot_ui| {

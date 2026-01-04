@@ -11,11 +11,6 @@ pub enum ResponseType {
     Ramp,
 }
 
-pub struct ResponsePoint<T: Float> {
-    pub time: T,
-    pub mag: T,
-}
-
 pub fn generate_input<T: Float>(response_type: ResponseType, count: usize, ts: T) -> Vec<T> {
     match response_type {
         ResponseType::Impulse => {
@@ -28,46 +23,68 @@ pub fn generate_input<T: Float>(response_type: ResponseType, count: usize, ts: T
     }
 }
 
-pub fn open_loop_response<T>(
-    tf: &DiscreteTransferFunction<T>,
-    response_type: ResponseType,
-    count: usize,
-) -> Vec<ResponsePoint<T>>
-where
-    T: Float + Sum,
-{
-    let a = tf.denominator();
-    let b = tf.numerator();
+pub struct ResponsePoint<T: Float> {
+    pub time: T,
+    pub mag: T,
+}
 
-    if a.is_empty() || a[0].abs() < T::epsilon() {
-        return vec![];
+pub struct ResponseSimulator<'a, T: Float> {
+    dtf: &'a DiscreteTransferFunction<T>,
+    input_state: Vec<T>,
+    output_state: Vec<T>,
+}
+
+impl<'a, T: Float + Sum> ResponseSimulator<'a, T> {
+    pub fn new(dtf: &'a DiscreteTransferFunction<T>) -> Self {
+        Self {
+            dtf,
+            input_state: vec![T::zero(); dtf.numerator().len()],
+            output_state: vec![T::zero(); dtf.denominator().len()],
+        }
     }
 
-    let x = generate_input(response_type, count, tf.sample_time());
-    let mut y = vec![T::zero(); count];
+    pub fn step(&mut self, input: T) -> T {
+        self.input_state.rotate_right(1);
+        self.input_state[0] = input;
 
-    for n in 0..count {
-        let forward = b
+        let forward = self.dtf.numerator()[..]
             .iter()
-            .take(n + 1) // b[k], k <= n
-            .zip(x[..=n].iter().rev()) // x[n-k], k <= n
-            .map(|(&bk, &xk)| bk * xk)
+            .zip(self.input_state.iter())
+            .map(|(&b, &x)| b * x)
             .sum::<T>();
 
-        let feedback = a[1..]
+        let feedback = self.dtf.denominator()[1..]
             .iter()
-            .take(n) // a[k], 1 <= k <= n
-            .zip(y[..n].iter().rev()) // y[n-k], 1 <= k <= n
-            .map(|(&ak, &yk)| ak * yk)
+            .zip(self.output_state.iter())
+            .map(|(&a, &y)| a * y)
             .sum::<T>();
 
-        y[n] = (forward - feedback) / a[0]; // Normalize to denominator
+        let output = (forward - feedback) / self.dtf.denominator()[0];
+
+        self.output_state.rotate_right(1);
+        if !self.output_state.is_empty() {
+            self.output_state[0] = output;
+        }
+
+        output
     }
 
-    (0..count)
-        .map(|i| ResponsePoint {
-            time: T::from(i).unwrap() * tf.sample_time(),
-            mag: y[i],
-        })
-        .collect()
+    pub fn get_response(
+        &mut self,
+        response_type: ResponseType,
+        count: usize,
+    ) -> Vec<ResponsePoint<T>> {
+        let input = generate_input(response_type, count, self.dtf.sample_time());
+        (0..count)
+            .map(|i| ResponsePoint {
+                time: T::from(i).unwrap() * self.dtf.sample_time(),
+                mag: self.step(input[i]),
+            })
+            .collect()
+    }
+
+    pub fn reset(&mut self) {
+        self.input_state.fill(T::zero());
+        self.output_state.fill(T::zero());
+    }
 }
