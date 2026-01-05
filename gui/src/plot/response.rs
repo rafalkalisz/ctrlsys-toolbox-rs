@@ -1,26 +1,13 @@
 use eframe::egui;
 
-use ctrlsys_toolbox_core::{
-    analysis::time::{ResponseSimulator, ResponseType},
-    tf::dtf::DiscreteTransferFunction,
-};
+use ctrlsys_toolbox_core::analysis::time::LTIResponse;
 
+// TODO: move to core/analysis/time?
 const MAX_POINTS: usize = 100_000;
 
-pub fn open_loop_response_plot(
-    ui: &mut egui::Ui,
-    tf: &DiscreteTransferFunction<f64>,
-    response_type: ResponseType,
-    t_end: f64,
-) {
-    let point_count = (t_end / tf.sample_time()) as usize + 1;
-    if point_count > MAX_POINTS {
-        return;
-    }
-
-    let mut simulator = ResponseSimulator::new(tf);
-    let response_points: Vec<[f64; 2]> = simulator
-        .get_response(response_type, point_count)
+pub fn response_plot(ui: &mut egui::Ui, response: &mut dyn LTIResponse<f64>, t_end: f64) {
+    let response_points: Vec<[f64; 2]> = response
+        .simulate(t_end)
         .iter()
         .map(|point| [point.time, point.mag])
         .collect();
