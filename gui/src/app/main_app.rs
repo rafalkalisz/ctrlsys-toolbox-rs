@@ -1,10 +1,7 @@
-use eframe::{
-    App,
-    egui::{self, ComboBox},
-};
+use eframe::egui::{self, ComboBox};
 
 use ctrlsys_toolbox_core::{
-    analysis::time::ResponseType,
+    analysis::time::{LTIResponse, OpenLoopResponse, ResponseType},
     filter::sallenkey::butterworth_poles,
     tf::{
         TimeDomain, TransferFunction, ctf::ContinousTransferFunction,
@@ -16,7 +13,7 @@ use ctrlsys_toolbox_core::{
 use crate::plot::{
     bode::{bode_mag_plot, bode_phase_plot},
     pz::pzplot,
-    response::open_loop_response_plot,
+    response::response_plot,
     text::{print_coeffs, tf_text},
 };
 
@@ -113,6 +110,8 @@ fn trim_coeffs(coeffs: &[f64]) -> Vec<f64> {
 }
 
 impl eframe::App for MainApp {
+    // TODO: destroy giant evil function asap
+    // TODO: massive runtime optimisations possible
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         let screen_height = ctx.screen_rect().height();
         let row_height = screen_height / 3.0;
@@ -194,12 +193,10 @@ impl eframe::App for MainApp {
                                         egui::DragValue::new(&mut self.response_length).speed(0.1),
                                     );
                                 });
-                                open_loop_response_plot(
-                                    ui,
-                                    &self.dtf,
-                                    self.response_type,
-                                    self.response_length,
-                                );
+                                // TODO: horrible evil solution just to keep demo running, remove asap
+                                let mut response =
+                                    OpenLoopResponse::<f64>::new(&self.dtf, self.response_type);
+                                response_plot(ui, &mut response, self.response_length);
                             });
                         });
                     });
